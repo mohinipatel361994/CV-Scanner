@@ -6,7 +6,8 @@ import streamlit as st
 from PIL import Image
 from spire.doc import Document
 # from docx import Document
-
+#from dotenv import load_dotenv
+#load_dotenv()
 logging.basicConfig(filename='app.log', level=logging.ERROR)
 
 # Set Streamlit to use wide mode for the full width of the page
@@ -54,8 +55,8 @@ with open('style.css') as f:
 # Example: Add your image handling or other logic here
 images = ['6MarkQ']
 
-# openai.api_key = st.secrets["secret_section"]["OPENAI_API_KEY"]
-openai.api_key = os.getenv("OPENAI_API_KEY")
+openai.api_key = st.secrets["secret_section"]["OPENAI_API_KEY"]
+#openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # Function to extract text from PDF uploaded via Streamlit
 def extract_text_from_doc(file_path):
@@ -528,13 +529,6 @@ def match_cv_with_criteria(cv_text, criteria_json):
             "Stratification": {},
             "Skill Score": 0
         }
-def clean_justification_output(text):
-    """
-    Remove any leading score patterns like '8/10:' from bullet points.
-    """
-    lines = text.strip().split('\n')
-    cleaned_lines = [re.sub(r'^\s*\d{1,2}/10:\s*', '', line) for line in lines if line.strip()]
-    return '\n'.join(cleaned_lines)
     
 def get_skill_score_justification(criteria_json, skill, score, cv_text):
     """
@@ -579,9 +573,9 @@ def get_skill_score_justification(criteria_json, skill, score, cv_text):
     )
 
     # Extract response content
-    raw_explanation = response.choices[0].message.content.strip()
-    cleaned_explanation = clean_justification_output(raw_explanation)
-    return cleaned_explanation
+    explanation = response.choices[0].message.content.strip()
+
+    return explanation
 
 def display_pass_fail_verdict(results, cv_text):
     candidate_name = results['Candidate Name']
@@ -824,9 +818,8 @@ footer = """
         }    
     </style>
     <div class="footer">
-        <p style="text-align: left;">Copyright © 2025 MPSeDC. All rights reserved.</p>
+        <p style="text-align: left;">Copyright v0.3 © 2025 MPSeDC. All rights reserved.</p>
         <p style="text-align: right;">The responses provided on this website are AI-generated. User discretion is advised.</p>
     </div>
 """
 st.markdown(footer, unsafe_allow_html=True)
-
