@@ -234,96 +234,64 @@ def use_genai_to_extract_criteria(jd_text):
 # Function to extract total years of experience using OpenAI's GPT model
 @st.cache_data
 def extract_experience_from_cv(cv_text):
-    # Get the current year dynamically
-    x = datetime.now()
-    current_year = x.strftime("%m-%Y")
-    
-    print("CV_Text : ",cv_text)
-    # Enhanced prompt template specifically for handling overlapping dates
+    # Get current date values
+    now = datetime.now()
+    current_year = now.strftime("%Y")           # For year only
+    current_month_year = now.strftime("%m-%Y")  # For month-year
+
     prompt_template = f"""
-    Please analyze this {cv_text} carefully to calculate the total years of professional experience. Follow these steps:
-    
-    1. First, list out all date ranges found in chronological order:
-       - Replace 'Current' 'Present' or 'till date' with {current_year}
-       - Include all years mentioned with positions Formats from following 
-       - Format as YYYY-YYYY for each position
-       - Format as DD-MM-YYYY - DD-MM-YYYY(For example:10-Jul-12 to 31-Jan-21)
-       - Format as YYYY-MM-DD - YYYY-MM-DD(For example:12-Jul-10 to 21-Jan-31)
-       - Format as YYYY-DD-MM - YYYY-DD-MM(For example:12-10-Jul to 21-31-Jan)
-       - Format as MM-YYYY-MM-YYYY
-       - Format as YYYY-MM-YYYY-MM
-       - Format as YYYY-YY.
-       - if in the cv_text 'start year' and 'present year' or 'end year' are not mentioned,then extract experience from 'cvtext' , if also not mentioned experience in cvtext then return 0.
-    
-    2. Then, merge overlapping periods :
-       - Identify any overlapping years
-       - Only count overlapping periods once
-       - Create a timeline of non-overlapping periods
+    Please analyze this CV text and calculate the total years of professional experience. Follow these steps:
+
+    1. First, list all date ranges in chronological order:
+       - Replace 'Current', 'Present', or 'till date' with {current_month_year}
+       - Include all years mentioned with positions.
+       - Accept formats: YYYY-YYYY, DD-MM-YYYY to DD-MM-YYYY, YYYY-MM-DD to YYYY-MM-DD,
+         YYYY-DD-MM to YYYY-DD-MM, MM-YYYY to MM-YYYY, YYYY-MM to YYYY-MM, YYYY-YY.
+       - If the CV text does not have a start year or end year, try to extract experience from the summary text.
+       - If no experience is mentioned at all, return 0.
+
+    2. Merge overlapping periods so they aren't double-counted.
 
     3. Calculate total experience:
-       - Sum up all non-overlapping periods.
-       - Round to one decimal place Return in Sngle Value.
-
-    "Only replace vague terms like "Current", "Present", or "till date" with the current year ({current_year})."
-
-    "Do NOT alter explicitly mentioned future dates like 05-2025. Accept and process them as-is."
+       - Sum all non-overlapping periods.
+       - Round to one decimal place.
+       - Return only the numeric value in years.
     """
 
     try:
-        # Query GPT-4 API with enhanced system message
         response = openai.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {
-                    "role": "system", 
-                    "content": """You are an expert in analyzing cv_text and calculating professional experience 
-                     Pay special attention to overlapping date ranges(If two or more projects within the same company 
-                     overlap, merge them into a single continuous range.) and ensure no double-counting of experience.
-                     Always show your work step by step."""
-                },
+                {"role": "system", "content": "You are an expert in extracting job experience from CV text. Handle overlapping job dates carefully."},
                 {"role": "user", "content": prompt_template}
             ],
             max_tokens=1000,
             temperature=0
         )
         
-        # Extract GPT response
         gpt_response = response.choices[0].message.content.strip()
-        #print("gpt_response:",gpt_response)
-        # Handle "present" or "current year" in the response
-        gpt_response = gpt_response.replace("Present", str(current_year)).replace("current", str(current_year))
-        print("gpt_response:",gpt_response)
-        # Extract experience and start year using improved regex
-        experience_match = re.findall(r'(\d+(?:\.\d+)?)\s*years?', gpt_response, re.IGNORECASE)
-        print("experience_match:",experience_match)
-        start_year_match = re.search(r'Start Year:\s*(\d{4})', gpt_response, re.IGNORECASE)
-        
-        # Extract and convert values
+
+        # Avoid false matches like "2025 years"
+        experience_match = [
+            float(e) for e in re.findall(r'(\d+(?:\.\d+)?)\s*years?', gpt_response, re.IGNORECASE)
+            if float(e) < 60
+        ]
+
         if experience_match:
-    # Choose the most relevant value by looking at the context or largest value
-            total_experience = max(map(float, experience_match))
-            print("total_experience:", total_experience)
-            total_experience = str(round(total_experience, 1))  # Round to one decimal place
-            print("total_experience2:", total_experience)
+            total_experience = str(round(max(experience_match), 1))
         else:
             total_experience = "Not found"
 
-            
+        start_year_match = re.search(r'Start Year:\s*(\d{4})', gpt_response, re.IGNORECASE)
         start_year = start_year_match.group(1) if start_year_match else "Not found"
-        
-        # Debugging output
-        # print("\nFull GPT Response:", gpt_response)
-        # print("\nExtracted Total Experience:", total_experience)
-        # print("Extracted Start Year:", start_year)
-        
+
         return {
             "total_years": total_experience,
             "start_year": start_year,
             "gpt_response": gpt_response
         }
-        
+
     except Exception as e:
-        print(f"Error occurred: {str(e)}")
         return {
             "total_years": "Not found",
             "start_year": "Not found",
@@ -842,6 +810,7 @@ footer = """
     </div>
 """
 st.markdown(footer, unsafe_allow_html=True)
+
 
 
 
