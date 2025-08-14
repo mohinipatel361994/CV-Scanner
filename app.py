@@ -234,64 +234,96 @@ def use_genai_to_extract_criteria(jd_text):
 # Function to extract total years of experience using OpenAI's GPT model
 @st.cache_data
 def extract_experience_from_cv(cv_text):
-    # Get current date values
-    now = datetime.now()
-    current_year = now.strftime("%Y")           # For year only
-    current_month_year = now.strftime("%m-%Y")  # For month-year
-
+    # Get the current year dynamically
+    x = datetime.now()
+    current_year = x.strftime("%m-%Y")
+    
+    print("CV_Text : ",cv_text)
+    # Enhanced prompt template specifically for handling overlapping dates
     prompt_template = f"""
-    Please analyze this CV text and calculate the total years of professional experience. Follow these steps:
-
-    1. First, list all date ranges in chronological order:
-       - Replace 'Current', 'Present', or 'till date' with {current_month_year}
-       - Include all years mentioned with positions.
-       - Accept formats: YYYY-YYYY, DD-MM-YYYY to DD-MM-YYYY, YYYY-MM-DD to YYYY-MM-DD,
-         YYYY-DD-MM to YYYY-DD-MM, MM-YYYY to MM-YYYY, YYYY-MM to YYYY-MM, YYYY-YY.
-       - If the CV text does not have a start year or end year, try to extract experience from the summary text.
-       - If no experience is mentioned at all, return 0.
-
-    2. Merge overlapping periods so they aren't double-counted.
+    Please analyze this {cv_text} carefully to calculate the total years of professional experience. Follow these steps:
+    
+    1. First, list out all date ranges found in chronological order:
+       - Replace 'Current' 'Present' or 'till date' with {current_year}
+       - Include all years mentioned with positions Formats from following 
+       - Format as YYYY-YYYY for each position
+       - Format as DD-MM-YYYY - DD-MM-YYYY(For example:10-Jul-12 to 31-Jan-21)
+       - Format as YYYY-MM-DD - YYYY-MM-DD(For example:12-Jul-10 to 21-Jan-31)
+       - Format as YYYY-DD-MM - YYYY-DD-MM(For example:12-10-Jul to 21-31-Jan)
+       - Format as MM-YYYY-MM-YYYY
+       - Format as YYYY-MM-YYYY-MM
+       - Format as YYYY-YY.
+       - if in the cv_text 'start year' and 'present year' or 'end year' are not mentioned,then extract experience from 'cvtext' , if also not mentioned experience in cvtext then return 0.
+    
+    2. Then, merge overlapping periods :
+       - Identify any overlapping years
+       - Only count overlapping periods once
+       - Create a timeline of non-overlapping periods
 
     3. Calculate total experience:
-       - Sum all non-overlapping periods.
-       - Round to one decimal place.
-       - Return only the numeric value in years.
+       - Sum up all non-overlapping periods.
+       - Round to one decimal place Return in Sngle Value.
+
+    "Only replace vague terms like "Current", "Present", or "till date" with the current year ({current_year})."
+
+    "Do NOT alter explicitly mentioned future dates like 05-2025. Accept and process them as-is."
     """
 
     try:
+        # Query GPT-4 API with enhanced system message
         response = openai.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": "You are an expert in extracting job experience from CV text. Handle overlapping job dates carefully."},
+                {
+                    "role": "system", 
+                    "content": """You are an expert in analyzing cv_text and calculating professional experience 
+                     Pay special attention to overlapping date ranges(If two or more projects within the same company 
+                     overlap, merge them into a single continuous range.) and ensure no double-counting of experience.
+                     Always show your work step by step."""
+                },
                 {"role": "user", "content": prompt_template}
             ],
             max_tokens=1000,
             temperature=0
         )
         
+        # Extract GPT response
         gpt_response = response.choices[0].message.content.strip()
-
-        # Avoid false matches like "2025 years"
-        experience_match = [
-            float(e) for e in re.findall(r'(\d+(?:\.\d+)?)\s*years?', gpt_response, re.IGNORECASE)
-            if float(e) < 60
-        ]
-
+        #print("gpt_response:",gpt_response)
+        # Handle "present" or "current year" in the response
+        gpt_response = gpt_response.replace("Present", str(current_year)).replace("current", str(current_year))
+        print("gpt_response:",gpt_response)
+        # Extract experience and start year using improved regex
+        experience_match = re.findall(r'(\d+(?:\.\d+)?)\s*years?', gpt_response, re.IGNORECASE)
+        print("experience_match:",experience_match)
+        start_year_match = re.search(r'Start Year:\s*(\d{4})', gpt_response, re.IGNORECASE)
+        
+        # Extract and convert values
         if experience_match:
-            total_experience = str(round(max(experience_match), 1))
+    # Choose the most relevant value by looking at the context or largest value
+            total_experience = max(map(float, experience_match))
+            print("total_experience:", total_experience)
+            total_experience = str(round(total_experience, 1))  # Round to one decimal place
+            print("total_experience2:", total_experience)
         else:
             total_experience = "Not found"
 
-        start_year_match = re.search(r'Start Year:\s*(\d{4})', gpt_response, re.IGNORECASE)
+            
         start_year = start_year_match.group(1) if start_year_match else "Not found"
-
+        
+        # Debugging output
+        # print("\nFull GPT Response:", gpt_response)
+        # print("\nExtracted Total Experience:", total_experience)
+        # print("Extracted Start Year:", start_year)
+        
         return {
             "total_years": total_experience,
             "start_year": start_year,
             "gpt_response": gpt_response
         }
-
+        
     except Exception as e:
+        print(f"Error occurred: {str(e)}")
         return {
             "total_years": "Not found",
             "start_year": "Not found",
@@ -396,35 +428,11 @@ def match_cv_with_criteria(cv_text, criteria_json):
             "5. STRICTLY EXCLUDE certifications unless they are explicitly listed under Essential Criteria.\n\n"
             "6. Skill Stratification must be consistent across all candidates and strictly based on essential criteria from the job description.\n\n"
             "7. STRICTLY, candidates who fail must have a score of zero and should not receive any skill scores.\n\n"
-            "8. Match essential criteria terms from the Job Description against the Candidate CV.\n"
-            "- First, attempt to find exact term matches in the CV.\n"
-            "- If the exact term is absent, actively search for strong contextual or descriptive evidence that clearly indicates the same skill, framework, or experience.\n"
-            "- For 'Knowledge of CMMI framework', the following also count as matches:\n"
-            "    * mentions of CMMI Levels (e.g., 'CMMI Level 3', 'Level 5')\n"
-            "    * process improvement / defined process frameworks\n"
-            "    * quality audits for software/process\n"
-            "    * metrics-based project tracking\n"
-            "    * adherence to internationally recognised process maturity models\n"
-            "- If such descriptions are present, treat the requirement as met and record the exact CV sentences or phrases that justify the match.\n"
-            "- Only reject when neither exact term nor any unambiguous equivalent evidence is in the CV.\n"
-            "Education Evaluation Logic:\n"
-            "- Normalize education fields from both JD and CV (e.g., 'CSE', 'CS', 'Computer Science', 'Information Technology' should be treated equivalently).\n"
-            "- Match abbreviations (e.g., 'B.E.' = 'Bachelor of Engineering' , 'B.Tech' = 'Bachelor of Technology').\n"
-            "- If JD does NOT specify education explicitly or if field/specialization is missing, then DO NOT reject the candidate for education. Instead, if CV contains valid degree (e.g., B.E., B.Tech, MCA, M.Sc IT, MBA in IT), accept it and do NOT return 'None'.\n"
-            "- For 'PG in IT/CS or equivalent' requirement, acceptable degrees are strictly:\n"
-            "   * M.Tech / M.E. in Computer Science & Engineering\n"
-            "   * M.Tech / M.E. in Information Technology\n"
-            "   * M.Tech / M.E. in Software Engineering\n"
-            "   * M.Tech / M.E. in Data Science, Artificial Intelligence, or Machine Learning (only if offered under CS/IT departments)\n"
-            "   * MCA (Master of Computer Applications)\n"
-            "   * M.Sc. in Computer Science\n"
-            "   * M.Sc. in Information Technology\n"
-            "- DO NOT accept degrees from unrelated departments unless explicitly stated as equivalent in the JD.\n"
-            "- MCA is to be treated as equivalent to other PG degrees in CS/IT.\n"
-            "- When a BE/B.Tech/Bachelor of Engineering requirement is present without specific stream mentioned, accept candidates from any engineering stream.\n"
-            "- Treat synonyms as equivalent (e.g., 'Comp Sci' = 'Computer Science', 'InfoTech' = 'Information Technology').\n"
-            "- Reject for education ONLY if the CV explicitly lacks the required degree type and no acceptable equivalent is present.\n"
-            f"Extract and evaluate ONLY the ESSENTIAL CRITERIA from the job description below:\n"
+                "Education Evaluation Logic:\n"
+                    "- Normalize education fields from both JD and CV (e.g., 'CSE', 'CS', 'Computer Science', 'Information Technology' should be treated equivalently).\n"
+                    "- Match abbreviations (e.g., 'B.E.' = 'Bachelor of Engineering' or 'Engineering' , 'B.Tech' = 'Bachelor of Technology').\n"
+                    "- If JD does NOT specify education explicitly or if field/specialization is missing, then DO NOT reject the candidate for education. Instead, if CV contains valid degree (e.g., B.E., B.Tech, MCA, M.Sc IT, MBA in IT), accept it and do NOT return 'None'.\n"
+            "Extract and evaluate ONLY the ESSENTIAL CRITERIA from the job description below:\n"
             "Job Description Essential Criteria:\n"
             f"{criteria_json}\n\n"
             "Candidate CV:\n"
@@ -433,17 +441,17 @@ def match_cv_with_criteria(cv_text, criteria_json):
             "IMPORTANT: STRICTLY follow these instructions:\n"
             "- Provide the evaluation in JSON format as follows:\n\n"
             "{\n"
-            "  \"Matching Education\": [List of education qualifications from the cv_text that match the ESSENTIAL education criteria from the criteria_json. If the criteria_json specifies a stream (e.g., IT, CSE, Computer Science), only consider CV qualifications in relevant or related fields. For BE/B.Tech/Engineering with no specific stream mentioned, consider this candidate.],\n"
+            "  \"Matching Education\": [List of education qualifications from the cv_text that match the ESSENTIAL education criteria from the criteria_json. If the criteria_json specifies a stream (e.g., IT, CSE, Computer Science), only consider CV qualifications in relevant or related fields.],for BE/Btech/Engineering no specific stream mentioned consider this candidate\n"
             "  \"Matching Experience\": [List of matched ESSENTIAL cv_text work experiences that align with the required experience stated in the criteria_json. Only include experiences in the relevant domain or field (e.g., IT, finance, healthcare, etc.) and exclude any experience where the candidate has worked with MPSeDC (M.P. State Electronics Development Corporation Ltd) in the last 6 months.],\n"
-            "  \"Matching Skills\": [List of experience from the cv_text that matches the ESSENTIAL skills required by the criteria_json, ensuring it is in the relevant domain or field specified and that the candidate has not worked with MPSeDC (M.P. State Electronics Development Corporation Ltd) in the last 6 months. Ensure the skills align with the domain specified in the criteria_json.],\n"
+            "  \"Matching Skills\": [List of experience from the cv_text that matches the ESSENTIAL experience required by the criteria_json, ensuring it is in the relevant domain or field specified (e.g., IT, finance, healthcare, etc.) and that the candidate has not worked with MPSeDC (M.P. State Electronics Development Corporation Ltd) in the last 6 months. Ensure the skills align with the domain specified in the criteria_json.],\n"
             "  \"Matching Certifications\": [List of matching cv_text certifications from essential criteria only],\n"
-            "  \"Rejection reasons\": [List of specific reasons why the candidate was rejected based on essential criteria, such as: 'Missing', 'Irrelevant domain experience', 'Education not matching', 'Mixed or unclear job roles', or 'Insufficient detail to verify essential criteria'],\n"
+            "  \"Rejection reasons\": [List of specific reasons why the candidate was rejected based on essential criteria, such as: 'Missing', 'Irrelevant domain experience (e.g., HR, Accounting)', 'Education not matching', 'Mixed or unclear job roles', or 'Insufficient detail to verify essential criteria'],\n"
             "  \"Skill Stratification\": {\n"
-            "    \"<SkillName1>\": score (1–10),\n"
-            "    \"<SkillName2>\": score (1–10),\n"
-            "    \"<SkillName3>\": score (1–10),\n"
-            "    \"<SkillName4>\": score (1–10),\n"
-            "    \"<SkillName5>\": score (1–10)\n"
+            "    \"<SkillName1>\": score (1–10)"
+            "    \"<SkillName2>\": score (1–10)"
+            "    \"<SkillName3>\": score (1–10)"
+            "    \"<SkillName4>\": score (1–10)"
+            "    \"<SkillName5>\": score (1–10)"
             "  } (NOTE: These 5 skills must come ONLY from the Essential Skills listed in the job description. All candidates must be evaluated against the same 5 skills. If the candidate FAILS any essential requirement, all skill scores MUST be 0.),\n"
             "  \"Pass\": true/false (STRICTLY based on essential criteria only)\n"
             "}"
@@ -815,9 +823,3 @@ footer = """
     </div>
 """
 st.markdown(footer, unsafe_allow_html=True)
-
-
-
-
-
-
