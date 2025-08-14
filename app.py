@@ -397,11 +397,16 @@ def match_cv_with_criteria(cv_text, criteria_json):
             "6. Skill Stratification must be consistent across all candidates and strictly based on essential criteria from the job description.\n\n"
             "7. STRICTLY, candidates who fail must have a score of zero and should not receive any skill scores.\n\n"
             "8. Match essential criteria terms from the Job Description against the Candidate CV.\n"
-            "- Prefer exact term matches when possible."
-            "- If the exact term is not present, accept the candidate if CV contains clear contextual evidence that unmistakably indicates experience with the concept (e.g., 'process improvements based on CMMI Level 5 guidelines', 'requirements management and quality audits per CMMI standards')."
-            "- Only accept inferred matches when there is no reasonable doubt about the candidate's experience."
-            "- Otherwise, mark the candidate as not meeting the essential requirement."
-            "- For skill/experience requirements such as 'Knowledge of CMMI framework', acceptable matches include both explicit mentions and clear contextual evidence of practical application (e.g., process adherence, quality audits, metrics tracking under CMMI guidelines).\n"
+            "- First, attempt to find exact term matches in the CV.\n"
+            "- If the exact term is absent, actively search for strong contextual or descriptive evidence that clearly indicates the same skill, framework, or experience.\n"
+            "- For 'Knowledge of CMMI framework', the following also count as matches:\n"
+            "    * mentions of CMMI Levels (e.g., 'CMMI Level 3', 'Level 5')\n"
+            "    * process improvement / defined process frameworks\n"
+            "    * quality audits for software/process\n"
+            "    * metrics-based project tracking\n"
+            "    * adherence to internationally recognised process maturity models\n"
+            "- If such descriptions are present, treat the requirement as met and record the exact CV sentences or phrases that justify the match.\n"
+            "- Only reject when neither exact term nor any unambiguous equivalent evidence is in the CV.\n"
             "Education Evaluation Logic:\n"
             "- Normalize education fields from both JD and CV (e.g., 'CSE', 'CS', 'Computer Science', 'Information Technology' should be treated equivalently).\n"
             "- Match abbreviations (e.g., 'B.E.' = 'Bachelor of Engineering' , 'B.Tech' = 'Bachelor of Technology').\n"
@@ -810,6 +815,7 @@ footer = """
     </div>
 """
 st.markdown(footer, unsafe_allow_html=True)
+
 
 
 
