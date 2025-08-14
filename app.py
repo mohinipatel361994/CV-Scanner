@@ -428,6 +428,11 @@ def match_cv_with_criteria(cv_text, criteria_json):
             "5. STRICTLY EXCLUDE certifications unless they are explicitly listed under Essential Criteria.\n\n"
             "6. Skill Stratification must be consistent across all candidates and strictly based on essential criteria from the job description.\n\n"
             "7. STRICTLY, candidates who fail must have a score of zero and should not receive any skill scores.\n\n"
+            "8. Match essential criteria terms from the Job Description against the Candidate CV.\n"
+            "   - Prefer exact term matching whenever possible.\n"
+            "   - If the exact term is absent but CV text contains clear contextual evidence meaning the same thing, accept it.\n"
+            "   - For example, if JD says 'CMMI framework' and CV says 'process improvements based on CMMI Level 5' or 'adhering to CMMI standards', count as match.\n"
+            "   - Only accept inferred matches when the context leaves no doubt.\n"
             "Education Evaluation Logic:\n"
             "- Normalize education fields from both JD and CV (e.g., 'CSE', 'CS', 'Computer Science', 'Information Technology' should be treated equivalently).\n"
             "- Match abbreviations (e.g., 'B.E.' = 'Bachelor of Engineering' , 'B.Tech' = 'Bachelor of Technology').\n"
@@ -836,4 +841,5 @@ footer = """
     </div>
 """
 st.markdown(footer, unsafe_allow_html=True)
+
 
