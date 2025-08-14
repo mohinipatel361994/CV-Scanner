@@ -6,8 +6,7 @@ import streamlit as st
 from PIL import Image
 from spire.doc import Document
 # from docx import Document
-from dotenv import load_dotenv
-load_dotenv()
+
 logging.basicConfig(filename='app.log', level=logging.ERROR)
 
 # Set Streamlit to use wide mode for the full width of the page
@@ -830,3 +829,4 @@ footer = """
     </div>
 """
 st.markdown(footer, unsafe_allow_html=True)
+
