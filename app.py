@@ -442,7 +442,7 @@ def match_cv_with_criteria(cv_text, criteria_json):
             "- Provide the evaluation in JSON format as follows:\n\n"
             "{\n"
             "  \"Matching Education\": [List of education qualifications from the cv_text that match the ESSENTIAL education criteria from the criteria_json. If the criteria_json specifies a stream (e.g., IT, CSE, Computer Science), only consider CV qualifications in relevant or related fields.],for BE/Btech/Engineering no specific stream mentioned consider this candidate\n"
-            "  \"Matching Experience\": [List of matched ESSENTIAL cv_text work experiences that align with the required experience stated in the criteria_json. Apply CONTEXTUAL MATCHING rules: If direct technology/tool names (e.g., CMMI) are not mentioned but CV clearly describes work that demonstrates practical experience with that technology/framework, include it with evidence. For example: 'CMMI framework experience: Demonstrated through multiple turnkey IT assignments with structured development processes, quality management, and process optimization.' Only include experiences in the relevant domain or field (e.g., IT, finance, healthcare, etc.) and exclude any experience where the candidate has worked with MPSeDC (M.P. State Electronics Development Corporation Ltd) in the last 6 months.],\n"
+            "  \"Matching Experience\": [List of matched ESSENTIAL cv_text work experiences that align with the required experience stated in the criteria_json. Only include experiences in the relevant domain or field (e.g., IT, finance, healthcare, etc.) and exclude any experience where the candidate has worked with MPSeDC (M.P. State Electronics Development Corporation Ltd) in the last 6 months.],\n"
             "  \"Matching Skills\": [List of experience from the cv_text that matches the ESSENTIAL experience required by the criteria_json, ensuring it is in the relevant domain or field specified (e.g., IT, finance, healthcare, etc.) and that the candidate has not worked with MPSeDC (M.P. State Electronics Development Corporation Ltd) in the last 6 months. Ensure the skills align with the domain specified in the criteria_json.],\n"
             "  \"Matching Certifications\": [List of matching cv_text certifications from essential criteria only],\n"
             "  \"Rejection reasons\": [List of specific reasons why the candidate was rejected based on essential criteria, such as: 'Missing', 'Irrelevant domain experience (e.g., HR, Accounting)', 'Education not matching', 'Mixed or unclear job roles', or 'Insufficient detail to verify essential criteria'],\n"
@@ -823,6 +823,3 @@ footer = """
     </div>
 """
 st.markdown(footer, unsafe_allow_html=True)
-
-
-
