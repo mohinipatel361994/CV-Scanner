@@ -212,7 +212,7 @@ def use_genai_to_extract_criteria(jd_text):
     
     try:
         response = openai.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o",
             messages=[{"role": "system", "content": "You are a helpful assistant."},
                       {"role": "user", "content": prompt}],
             max_tokens=1500,
@@ -823,6 +823,7 @@ footer = """
     </div>
 """
 st.markdown(footer, unsafe_allow_html=True)
+
 
 
 
