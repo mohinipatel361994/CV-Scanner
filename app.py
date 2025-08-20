@@ -151,7 +151,7 @@ def use_genai_to_extract_criteria(jd_text):
 
             "education": Qualifications explicitly listed as mandatory or required.
             "experience": Minimum experience required for eligibility.
-            "skills": Include only the core skills that are explicitly required for the role. Ensure they align with the required years of experience — for example, if 5+ years of experience is required, include only those skills the candidate is expected to have mastered at that level.
+            "skills": Include only the core skills that are explicitly in Essential Criteria for the role. Ensure they align with the required years of experience — for example, if 5+ years of experience is required, include only those skills the candidate is expected to have mastered at that level.
             "certifications": Certifications explicitly required in the JD.
             "Desirable Criteria" includes:
 
@@ -823,5 +823,6 @@ footer = """
     </div>
 """
 st.markdown(footer, unsafe_allow_html=True)
+
 
 
