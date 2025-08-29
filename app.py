@@ -164,7 +164,7 @@ def use_genai_to_extract_criteria(jd_text):
             If no specific qualifications are mentioned in the JD, or if only partial qualifications are listed (e.g., just a domain like "CS(computer science)","IT(information technology)" without degree names), then infer and include **relevant standard degrees** (such as "B.E./B.Tech/Engineering in Computer Science", "MCA", or "MSc IT") based on the job domain. Inferred qualifications should be placed in the **Desirable Criteria > education** section unless the JD explicitly states they are required.
            
             **Special Rule for B.E./B.Tech/Engineering:**
-            - If the JD specifically mentions **"B.E./B.Tech/Engineering in CS/IT or if mentioned EC "**, then only candidates with those specializations should be considered under **Essential Criteria**.
+            - If the JD specifically mentions **"B.E./B.Tech/Engineering in CS/IT or if mentioned EC/Electronics and Communication"**, then only candidates with those specializations should be considered under **Essential Criteria**.
             - If no such specialization is mentioned and it only says "B.E./B.Tech/Engineering", then all branches of B.E./B.Tech/Engineering graduation are considered eligible.
 
             Key Classification Rules:
@@ -823,6 +823,7 @@ footer = """
     </div>
 """
 st.markdown(footer, unsafe_allow_html=True)
+
 
 
 
